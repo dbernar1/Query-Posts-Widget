@@ -348,5 +348,3 @@ function query_posts_select_single( $label, $id, $name, $value, $options, $blank
 	echo '</select>';
 	echo '</p>';
 }
-
-?>
