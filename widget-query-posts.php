@@ -169,72 +169,76 @@ class Query_Posts_Widget extends WP_Widget {
 
 				$new_query->the_post();
 
-				/* Get post class. */
-				$post_class = join( ' ', get_post_class( $instance['post_class'] ) );
+				if ( $loop_template = locate_template( 'content-query-posts.php' ) ) {
+					get_template_part( 'content', 'query-posts' );
+				} else {
+					/* Get post class. */
+					$post_class = join( ' ', get_post_class( $instance['post_class'] ) );
 
-				/* Post container. */
-				if ( 'widget' == $instance['entry_container'] ) {
-					$before_widget = preg_replace( '/id="[^"]*"/','', $before_widget );
-					echo preg_replace( '/class="[^"]*"/', "class=\"{$post_class}\"", $before_widget );
-					if ( $show_entry_title )
-						echo $before_title . "<a href='" . get_permalink() . "' title='" . the_title_attribute( 'echo=0' ) . "' rel='bookmark'>" . apply_filters( 'widget_title', the_title( '', '', false ) ) . "</a>" . $after_title;
+					/* Post container. */
+					if ( 'widget' == $instance['entry_container'] ) {
+						$before_widget = preg_replace( '/id="[^"]*"/','', $before_widget );
+						echo preg_replace( '/class="[^"]*"/', "class=\"{$post_class}\"", $before_widget );
+						if ( $show_entry_title )
+							echo $before_title . "<a href='" . get_permalink() . "' title='" . the_title_attribute( 'echo=0' ) . "' rel='bookmark'>" . apply_filters( 'widget_title', the_title( '', '', false ) ) . "</a>" . $after_title;
+					}
+					elseif ( 'ol' == $instance['entry_container'] || 'ul' == $instance['entry_container'] ) {
+						echo "<li class='{$post_class}'>";
+					}
+					elseif ( !empty( $instance['entry_container'] ) ) {
+						echo "<{$instance['entry_container']} class='{$post_class}'>";
+					}
+
+					/* Post thumbnails. */
+					if ( $the_post_thumbnail && function_exists( 'get_the_image' ) )
+						get_the_image( array( 'custom_key' => array( 'Thumbnail', 'thumbnail' ), 'default_size' => $instance['size'] ) );
+
+					elseif ( $the_post_thumbnail && current_theme_supports( 'post-thumbnails' ) ) {
+						echo '<a href="' . get_permalink() . '" title="' . the_title_attribute( 'echo=0' ) . '">';
+						the_post_thumbnail( $instance['size'] );
+						echo '</a>';
+					}
+
+					/* Entry title. */
+					if ( 'widget' !== $instance['entry_container'] && $instance['entry_title'] && $show_entry_title )
+						the_title( "<{$instance['entry_title']} class='entry-title'><a href='" . get_permalink() . "' title='" . the_title_attribute( 'echo=0' ) . "' rel='bookmark'>", "</a></{$instance['entry_title']}>" );
+
+					elseif ( 'widget' !== $instance['entry_container'] && $show_entry_title )
+						the_title( "<a href='" . get_permalink() . "' title='" . the_title_attribute( 'echo=0' ) . "' rel='bookmark'>", "</a>" );
+
+					/* Byline. */
+					if ( $instance['byline'] )
+						echo do_shortcode( "<p class='byline'>{$instance['byline']}</p>" );
+
+					/* Content/Excerpt. */
+					if ( 'the_content' == $instance['entry_content'] ) {
+						echo '<div class="entry-content">';
+						$more = 0; // Make sure <!--more--> link works
+						the_content( $instance['more_link_text'] );
+						echo '</div>';
+					}
+					elseif ( 'the_excerpt' == $instance['entry_content'] ) {
+						echo '<div class="entry-summary">';
+						the_excerpt();
+						echo '</div>';
+					}
+
+					/* <!--nextpage--> links. */
+					if ( $wp_link_pages )
+						wp_link_pages( array( 'before' => '<p class="pages page-links">' . __( 'Pages:', 'query-posts' ), 'after' => '</p>' ) );
+
+					/* Entry meta. */
+					if ( $instance['entry_meta'] )
+						echo do_shortcode( "<p class='entry-meta'>{$instance['entry_meta']}</p>" );
+
+					/* Close post container. */
+					if ( 'widget' == $instance['entry_container'] )
+						echo $after_widget;
+					elseif ( 'ol' == $instance['entry_container'] || 'ul' == $instance['entry_container'] )
+						echo '</li>';
+					elseif ( !empty( $instance['entry_container'] ) )
+						echo "</{$instance['entry_container']}>";
 				}
-				elseif ( 'ol' == $instance['entry_container'] || 'ul' == $instance['entry_container'] ) {
-					echo "<li class='{$post_class}'>";
-				}
-				elseif ( !empty( $instance['entry_container'] ) ) {
-					echo "<{$instance['entry_container']} class='{$post_class}'>";
-				}
-
-				/* Post thumbnails. */
-				if ( $the_post_thumbnail && function_exists( 'get_the_image' ) )
-					get_the_image( array( 'custom_key' => array( 'Thumbnail', 'thumbnail' ), 'default_size' => $instance['size'] ) );
-
-				elseif ( $the_post_thumbnail && current_theme_supports( 'post-thumbnails' ) ) {
-					echo '<a href="' . get_permalink() . '" title="' . the_title_attribute( 'echo=0' ) . '">';
-					the_post_thumbnail( $instance['size'] );
-					echo '</a>';
-				}
-
-				/* Entry title. */
-				if ( 'widget' !== $instance['entry_container'] && $instance['entry_title'] && $show_entry_title )
-					the_title( "<{$instance['entry_title']} class='entry-title'><a href='" . get_permalink() . "' title='" . the_title_attribute( 'echo=0' ) . "' rel='bookmark'>", "</a></{$instance['entry_title']}>" );
-
-				elseif ( 'widget' !== $instance['entry_container'] && $show_entry_title )
-					the_title( "<a href='" . get_permalink() . "' title='" . the_title_attribute( 'echo=0' ) . "' rel='bookmark'>", "</a>" );
-
-				/* Byline. */
-				if ( $instance['byline'] )
-					echo do_shortcode( "<p class='byline'>{$instance['byline']}</p>" );
-
-				/* Content/Excerpt. */
-				if ( 'the_content' == $instance['entry_content'] ) {
-					echo '<div class="entry-content">';
-					$more = 0; // Make sure <!--more--> link works
-					the_content( $instance['more_link_text'] );
-					echo '</div>';
-				}
-				elseif ( 'the_excerpt' == $instance['entry_content'] ) {
-					echo '<div class="entry-summary">';
-					the_excerpt();
-					echo '</div>';
-				}
-
-				/* <!--nextpage--> links. */
-				if ( $wp_link_pages )
-					wp_link_pages( array( 'before' => '<p class="pages page-links">' . __( 'Pages:', 'query-posts' ), 'after' => '</p>' ) );
-
-				/* Entry meta. */
-				if ( $instance['entry_meta'] )
-					echo do_shortcode( "<p class='entry-meta'>{$instance['entry_meta']}</p>" );
-
-				/* Close post container. */
-				if ( 'widget' == $instance['entry_container'] )
-					echo $after_widget;
-				elseif ( 'ol' == $instance['entry_container'] || 'ul' == $instance['entry_container'] )
-					echo '</li>';
-				elseif ( !empty( $instance['entry_container'] ) )
-					echo "</{$instance['entry_container']}>";
 			}
 
 			/* Close wrapper. */
